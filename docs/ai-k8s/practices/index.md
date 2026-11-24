@@ -1,0 +1,114 @@
+---
+title: 实战、排障与选型
+description: 用可复现的实验、性能数字、事故证据和决策树回答 AI/LLM on Kubernetes 的高频问题
+status: evolving
+last_reviewed: 2026-10-29
+---
+
+# 实战、排障与选型
+
+这个系列不再按组件解释“它是什么”，而是从一个具体问题出发，给出证据链、实验变量、验收指标和停止条件。页面中的数字应由目标硬件和真实负载实测，示例值不能替代生产基线。
+
+## 排障与事故
+
+- [GPU 有空闲，Pod 为什么仍然 Pending](gpu-pending.md)
+- [GPU 利用率为什么很低](low-gpu-utilization.md)
+- [GPU 节点故障图鉴](gpu-failure-atlas.md)
+- [看似 NCCL 故障，实际是 Host Memory OOM](nccl-unhandled-cuda-error-host-memory-oom.md)
+- [AI 集群事故复盘方法](incident-review.md)
+- [数百个 Kubernetes 集群的稳定性建设](kubernetes-fleet-reliability.md)
+- [Kubernetes 容灾演练综述：故障注入、备份恢复与验收](kubernetes-disaster-recovery-chaos-engineering.md)
+- [万节点 Kubernetes 集群优化实战：控制面、etcd、调度与网络](large-scale-kubernetes-optimization.md)
+- [Kube-apiserver 负载均衡实战：HTTP/2、TLS 终结与四层/七层选型](kube-apiserver-load-balancing.md)
+- [Contiv、OVS 与 Cilium 串联网络实战：kube-proxy 为什么可能接不到报文](contiv-ovs-cilium-network.md)
+- [从 Contiv 到 Kube-OVN：保留物理 VLAN 的单节点迁移实战](contiv-to-kubeovn-underlay.md)
+- [Koordinator Webhook 多副本证书竞态实战：从每秒 60 次 409 到共享 CA 收敛](koordinator-webhook-multireplica-cert-race.md)
+- [APF 隔离实战：零席位 Reject 为什么仍会放行](apf-isolation-case.md)
+
+## 性能、成本与容量
+
+- [DeepSeek-V4.1-Flash-1017 Day0：八卡 H20 的 vLLM 部署与百万 Token 实测](deepseek-v41-flash-1017-day0.md)
+- [DeepSeek-V4.1-Flash：vLLM 0.32.0 升级对比实测](deepseek-v41-vllm032-upgrade.md)
+- [DeepSeek-V4.1-Flash：vLLM 0.33.0 与 0.32.0 历史对照实测](deepseek-v41-vllm033-upgrade.md)
+- [vLLM Sleep 单卡双模型实测：恢复耗时、显存与 DRA 设计](vllm-sleep-model-switch-l20.md)
+- [MiMo-V2.6-Pro-RL 首测：八张 H20-3e 的 vLLM 部署与性能实测](mimo-v26-pro-rl-h20-first-test.md)
+- [Qwen-Image-2.1：单卡 L20 的 SGLang 与 vLLM-Omni 实测](qwen-image21-l20-benchmark.md)
+- [Qwen3.8-2.4T-A95B-FP8 Day 0：32×H20-3e 的 SGLang 部署与压测](qwen38-a95b-h20-day0.md)
+- [MiniMax-M3：八卡 H20 上的 SGLang 与 vLLM 实测](minimax-m3-h20-benchmark.md)
+- [MiniMax H3 H20-3e 实测：完整音视频生成、双引擎与持久化验收](minimax-h3-h20-benchmark.md)
+- [DeepSeek-V4-Flash-Vision-Exp Day 0：4×H20 多模态部署与压测](deepseek-v4-flash-vision-exp-day0-h20.md)
+- [GLM-5.3 首日实测：8×H20 上的 SGLang 与 vLLM 基线压测](glm53-h20-sglang-vllm-test-plan.md)
+- [Hy4-preview BF16 双机 H20 实测：SGLang 与 vLLM 怎么选](hy4-preview-hardware-benchmark-plan.md)
+- [Ling-3.0-flash BF16 单机 4×H20 实测：SGLang、vLLM 与 MTP 怎么选](ling3-flash-h20-deployment-benchmark-plan.md)
+- [Qwen3.8-Flash-Next Day 0 实战：4×H20 跑通原生 262K](qwen38-flash-next-sglang-day0.md)
+- [SGLang v0.5.16 / v0.5.17 / v0.5.18 单卡 L20 实测：升级真的更快吗](sglang-0518-release-analysis.md)
+- [DeepSeek V4 Flash 的分布式 KV Cache：从 P/D 直传到全局缓存池](distributed-kv-cache-deepseek-v4.md)
+- [从半小时到五分钟：大模型冷启动全链路优化](llm-cold-start-optimization.md)
+- [大模型权重分发与加载加速：社区与商业方案选型](model-weight-delivery-acceleration.md)
+- [vLLM、SGLang 与 TensorRT-LLM 同机实测](inference-engine-benchmark.md)
+- [模型显存与并发容量计算器](model-memory-calculator.md)
+- [Prefill/Decode 分离的性能拐点](pd-break-even.md)
+- [国内外 GPU 云资源选型](cloud-gpu-selection.md)
+
+## 平台和调度
+
+- [NVIDIA NVCRE：GPU 集群验收原理与生产接入评估](nvidia-cluster-readiness-engine.md)
+- [大规模 Kubernetes 监控方案：Prometheus、VictoriaMetrics、Thanos 与 Mimir](large-scale-kubernetes-monitoring-tsdb.md)
+- [大规模 Kubernetes 调度器优化：队列、插件、搜索与并行架构](large-scale-kubernetes-scheduler-optimization.md)
+- [OpenTelemetry × Grafana：观测 Kubernetes 控制面与集群状态](opentelemetry-kubernetes-components-grafana.md)
+- [大模型时代 GPU 开发平台踩坑记](gpu-notebook-platform-evolution.md)
+- [8 卡节点的四卡任务，如何避免拿到跨 NUMA 的碎片 GPU](gpu-topology-fragmentation-scheduling.md)
+- [GPU 资源银行与潮汐推理平台实践蓝图](gpu-resource-bank-tidal-platform.md)
+- [Kueue 与 Volcano 对比实验](kueue-vs-volcano.md)
+- [夜间借出的推理 GPU 怎样还回来？KEDA、Volcano 与 DRA 实测](keda-volcano-tidal-gpu.md)
+- [Kubernetes v1.37 DRA 高级三件套实测：跨驱动 PCIe 拓扑绑定、可消耗容量切分与单卡故障隔离](kubernetes-137-dra-topology-sharing-health.md)
+- [Volcano GPU 放置与抢占：为什么还剩 8 张卡，推理 Pod 却起不来](volcano-gpu-placement.md)
+- [Volcano 1.16 GPU 调度实战：配额、历史公平性与缓存唤醒](volcano-116-gpu-scheduling.md)
+- [Volcano 功能很多，为什么企业里还是调不顺？](volcano-scheduler-enterprise-limits.md)
+- [Kubernetes 还是 Slurm](kubernetes-vs-slurm.md)
+- [在 KubeVirt 上运行 Kubernetes：架构边界、生产设计与 AI 场景取舍](../cluster/kubevirt-guest-kubernetes.md)
+- [KubeVirt 单节点桌面实战：本地盘、CDI 与浏览器 noVNC](kubevirt-local-desktop-lab.md)
+- [用 KubeVirt 与 Ceph RBD 构建持久 GPU Notebook](kubevirt-rbd-notebook.md)
+- [Spot GPU 与 Checkpoint 恢复实验](spot-checkpoint.md)
+- [国产 GPU/NPU 的 Kubernetes 实践](domestic-accelerators.md)
+
+## 端到端交付
+
+- [大模型 SFT 入门：把 Loss、LoRA、Batch 和并行一次讲明白](../training/sft-concepts.md)
+- [大模型 SFT 训练实战：从单卡 LoRA 到 DeepSeek V4](../training/sft-from-single-gpu-to-deepseek-v4.md)
+- [RDMA 到底能让分布式训练快多少：DeepSeek V4 双机 16 卡实测](../training/rdma-distributed-training-benchmark.md)
+- [SwanLab 自托管：从 Kubernetes 部署到真实 SFT 指标](../training/swanlab-self-hosted.md)
+- [从 W&B Local 到 SwanLab：两年团队实验追踪实践与选型](../training/wandb-vs-swanlab.md)
+- [用 SGLang-Omni 部署 MiniMax-Music3：从一句创意到完整歌曲](minimax-music3-sglang-omni.md)
+- [Qwen3-TTS 部署与试用：把技术文章变成可以听的旁白](qwen3-tts-article-narration.md)
+- [Qwen3.8-27B Day 0：vLLM 与 SGLang 测试记录](qwen38-27b-day0.md)
+- [从 Docker 到 Kubernetes：DeepSeek Harness、内置 Chromium 与 DSH Plugin 实战](deepseek-harness-kubernetes.md)
+- [GLM-5.2 FP8 在 8×H20 141GB 上的 AIBrix + vLLM 实测](glm52-fp8-h20-aibrix-vllm.md)
+- [DeepSeek-V4-Flash-0731 的 H20 部署与压测](deepseek-v4-flash-h20-evaluation.md)
+- [在既有 Kubernetes 集群落地 AIBrix](aibrix-existing-cluster.md)
+- [AIBrix 面向生产：DS V4 Flash 压测、看板与恢复实战](aibrix-dsv4-observability.md)
+- [AIBrix ModelClaim 单卡实测：小模型双活、14B 轮换与 L20 的显存边界](aibrix-modelclaim-l20.md)
+- [AIBrix 生产实战：Qwen3.8-27B 在 L20 上的容量、退出与过载保护](aibrix-qwen-l20-production.md)
+- [AIBrix 路由到底在优化什么：从缓存命中到尾延迟](aibrix-routing-cache-tradeoffs.md)
+- [AIBrix 真实 GPU 实测：从两机推理到八节点碎片 GPU](aibrix-gpu-multinode-pd-production.md)
+- [在 Kubernetes 部署 ComfyUI：离线镜像、CephFS 模型与跨集群 Ingress](comfyui-minimax-h3-gpu.md)
+- [RBG 多角色推理编排与 sr1 实战](rbg-existing-cluster.md)
+- [RBG 带流量实战：副本恢复了，请求就恢复了吗](rbg-qwen-l20-serving-resilience.md)
+- [SGLang Model Gateway CPU 实战：动态发现、路由与故障摘除](sglang-model-gateway-cpu-lab.md)
+- [从 Ollama 到 Kubernetes 生产推理](ollama-to-production.md)
+- [70B 模型向百节点分发](model-distribution-100-nodes.md)
+- [离线环境部署 AI/LLM 平台](air-gapped-ai-platform.md)
+- [Agent Sandbox 攻防实验](agent-sandbox-red-team.md)
+
+## 阅读和复现约定
+
+每个实验至少记录：
+
+1. Kubernetes、驱动、CUDA/ROCm/CANN 和组件版本；
+2. GPU/NPU/TPU、CPU、内存、磁盘和网络拓扑；
+3. 模型、精度、输入输出长度和并发分布；
+4. 冷缓存/热缓存、失败重试和预热状态；
+5. 原始日志、事件、指标、Trace 和时间戳；
+6. 成功标准、失败标准和结果的不适用范围。
+
+复现实验时先修改 Namespace、镜像、StorageClass、资源名和安全策略，不要直接把示例中的权限、镜像标签或云厂商参数复制到生产。

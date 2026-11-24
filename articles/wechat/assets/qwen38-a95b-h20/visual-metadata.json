@@ -1,0 +1,30 @@
+{
+  "style_reference": "MiniMax M3 body visuals",
+  "palette": {
+    "qwen_blue": "#0A2EFE",
+    "purple": "#7057D9",
+    "vllm_orange": "#F28C28",
+    "accent": "#00A6A6"
+  },
+  "body_size": [
+    1200,
+    675
+  ],
+  "cover_sizes": [
+    [
+      900,
+      383
+    ],
+    [
+      900,
+      900
+    ]
+  ],
+  "evidence_policy": "Covers are editorial; measured charts read the sanitized dual-engine summary. Public UI and Grafana evidence are verbatim copies of archived screenshots; no chart data or interface content is altered.",
+  "visual_review": {
+    "short_chart": "axis titles, scales, legend, markers and mobile readability checked",
+    "workload_chart": "labels, values and panel boundaries checked",
+    "context_chart": "SGLang and vLLM status labels checked against the archived context ladder",
+    "topology": "stage count, GPU count and storage labels checked"
+  }
+}

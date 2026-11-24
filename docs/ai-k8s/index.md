@@ -1,0 +1,201 @@
+---
+title: AI/LLM on Kubernetes 基础设施
+description: 从加速器、大数据和集群，到训练、推理、RAG、Agent 与生产运维的完整技术地图
+status: stable
+last_reviewed: 2026-08-14
+---
+
+# AI/LLM on Kubernetes 基础设施
+
+这套文档讨论的不是“怎样把一个带 GPU 的 Pod 跑起来”，而是怎样把 Kubernetes 建设成一套可持续演进的 AI/LLM 基础设施：设备能被发现和隔离，作业能公平排队，数据能跟上算力，训练能够恢复，推理能够满足延迟目标，模型和依赖能够追溯，平台能够升级、观测和审计。
+
+内容覆盖从硬件到应用的完整链路，并尽量回答四类问题：组件负责什么、什么时候需要、怎样验证、出问题从哪里排查。
+
+[按主题浏览](#topic-map){ .md-button .md-button--primary }
+[查看参考架构](guides/reference-architectures.md){ .md-button }
+[运行 GPU 平台实验](guides/gpu-platform-lab.md){ .md-button }
+[进入实战与排障](practices/index.md){ .md-button }
+
+## 基础设施全景
+
+```text
+用户、SDK、应用与工作流
+        │
+        ├─ 大数据 / RAG / Agent / 在线推理 / 训练任务
+        │
+Gateway、Serving、Trainer、Pipeline、Queue
+        │
+Kubernetes API、控制器、调度器、准入与策略
+        │
+Device Plugin / CDI / DRA / CNI / CSI / CRI
+        │
+GPU、TPU、NPU、CPU、RDMA、NVMe、对象存储
+        │
+供电、散热、机架、故障域与数据中心网络
+```
+
+任何一层都可能成为瓶颈。GPU 利用率低不一定是 GPU 问题，也可能是排队策略、CPU 解码、模型下载、存储吞吐、网络拥塞、请求路由或批处理参数造成的。阅读和排障时，应沿着完整请求或作业链路逐层验证。
+
+## 从哪里开始
+
+| 你的目标 | 建议路径 |
+| --- | --- |
+| 从零理解 AI 如何运行在 Kubernetes 上 | [Kubernetes 如何承载 AI](foundations/kubernetes-for-ai.md) → [集群架构设计](cluster/architecture.md) → [术语表](reference/glossary.md) |
+| 建设或接管 GPU 集群 | [GPU 节点软件栈](cluster/gpu-node-stack.md) → [设备管理](accelerators/device-management.md) → [GPU 调度](gpu-scheduling.md) → [平台运维](platform-operations.md) |
+| 选择开源集群管理平台 | [开源集群管理工具与方式](cluster/open-source-management.md) → [平台运维](platform-operations.md) → [跨集群与大规模 GPU](cluster/multi-cluster-ai.md) |
+| 选择国内外云厂商 Kubernetes | [云厂商托管 Kubernetes](cluster/cloud-managed-kubernetes.md) → [集群架构设计](cluster/architecture.md) → [异构加速器](accelerators/heterogeneous-accelerators.md) |
+| 建设 GPU Notebook 开发平台 | [GPU Notebook 平台与存储](development/gpu-notebook-platform.md) → [GPU 调度](gpu-scheduling.md) → [数据与缓存](data-storage.md) → [MLOps](mlops.md) |
+| 建设大数据与 AI 数据平台 | [大数据 on Kubernetes](data/big-data-on-kubernetes.md) → [数据与缓存](data-storage.md) → [模型制品](data/model-artifacts.md) → [MLOps](mlops.md) |
+| 建设多租户训练平台 | [队列与多租户](queue-multitenancy.md) → [分布式训练](distributed-training.md) → [RDMA 网络](rdma-networking.md) → [可靠性](reliability.md) |
+| 建设 Ray 大模型平台 | [Ray 训练与推理](ray-llm-platform.md) → [分布式训练](distributed-training.md) → [大数据 on Kubernetes](data/big-data-on-kubernetes.md) → [可靠性](reliability.md) |
+| 建设在线 LLM 推理服务 | [本地运行与测试](inference/local-testing.md) → [推理平台总览](llm-inference.md) → [推理引擎](inference/engines.md) → [Serving 框架](inference/serving-frameworks.md) → [API 中转与网关选型](inference/llm-api-relay-gateway-overview.md) → [网关与路由](inference/gateway-routing.md) → [Higress 实战](inference/higress-ai-gateway.md) |
+| 规划多地域或多 GPU 集群 | [集群架构设计](cluster/architecture.md) → [跨集群与大规模 GPU](cluster/multi-cluster-ai.md) → [生产参考架构](guides/reference-architectures.md) |
+| 建设 RAG 或 Agent 平台 | [Agent 现状与趋势](rag-agent/agent-landscape-2026.md) → [Agent Harness](rag-agent/agent-harness-technology-overview.md) → [HarnessRouter](rag-agent/harnessrouter-overview.md) → [DeepSeek Harness 容器化](rag-agent/deepseek-harness-runtime-containerization.md) → [Kubernetes 实战](practices/deepseek-harness-kubernetes.md) → [Agent Sandbox 选型](rag-agent/agent-sandbox-selection.md) → [安全治理](security-governance.md) |
+| 负责 SRE、成本或容量 | [可观测性](observability.md) → [性能基准](benchmarking.md) → [成本与容量](cost-capacity.md) → [落地路线图](adoption-roadmap.md) |
+
+## 完整主题地图 { #topic-map }
+
+### 基础与架构
+
+- [Kubernetes 如何承载 AI](foundations/kubernetes-for-ai.md)：从 API、控制器、调度器到 CRI、CNI、CSI 和设备接口。
+- [AI 集群架构设计](cluster/architecture.md)：工作负载画像、节点池、故障域、单集群与多集群边界。
+- [Kubernetes 流控与服务限流](cluster/flow-control.md)：APF、公平排队、客户端限速、GPU 任务准入与模型接口流量治理。
+- [开源 Kubernetes 集群管理工具与方式](cluster/open-source-management.md)：从 kubectl、Headlamp 和 GitOps，到 Rancher、Cluster API、Gardener、Karmada 与 OCM 的分层选型。
+- [国内外主流云厂商 Kubernetes](cluster/cloud-managed-kubernetes.md)：对比 ACK、TKE、CCE、EKS、GKE 和 AKS 的托管边界、网络存储生态与 AI/GPU 能力。
+- [Kubernetes 跨集群与大规模 GPU](cluster/multi-cluster-ai.md)：Federation 历史、Karmada/MultiKueue 等当前能力，以及训练整 Job 放置和区域级推理架构。
+- [Karmada 与 Virtual Kubelet 对比](cluster/karmada-vs-virtual-kubelet.md)：集群级编排与虚拟节点适配的架构边界、副本语义、故障恢复、网络存储及 GPU 选型。
+- [AI on Kubernetes 十年发展史](history.md)：从 GPU Pod、Operator 和批调度，到 DRA、推理网关与分离式推理。
+- [术语表](reference/glossary.md)：统一 Kubernetes、GPU、训练、推理、网络、RAG 和可靠性术语。
+
+### 集群、节点与加速器
+
+- [GPU 节点软件栈](cluster/gpu-node-stack.md)：固件、内核、驱动、容器运行时、CDI、Operator 与节点验收。
+- [从 cgroup v1 到 v2：在 Kubernetes 节点实测 youki、crun 和 runc](cluster/youki-crun-cgroup-v1.md)，用短容器耗时和真实 Pod 判断哪些业务值得从 runc 灰度到 crun，以及 youki 在旧节点上的兼容边界。
+- [多厂商异构加速器](accelerators/heterogeneous-accelerators.md)：NVIDIA、AMD、Intel、TPU、Trainium/Inferentia 与 CPU/NPU。
+- [Device Plugin、CDI 与 DRA](accelerators/device-management.md)：三者的职责、迁移路径和生产选型。
+- [GPU 与异构资源调度](gpu-scheduling.md)：整卡、MIG、共享、拓扑、亲和性与碎片治理。
+
+### 队列、弹性与容量
+
+- [队列、公平共享与多租户](queue-multitenancy.md)：Kueue、ClusterQueue、Flavor、Cohort、优先级与抢占。
+- [AI 工作负载弹性伸缩](scheduling/autoscaling.md)：HPA、KEDA、Cluster Autoscaler、Karpenter 与队列协同。
+- [GPU 成本与容量规划](cost-capacity.md)：单位经济性、需求预测、利用率、Spot 和 FinOps。
+
+### 网络、数据与模型制品
+
+- [RDMA 与 AI 高速网络](rdma-networking.md)：InfiniBand、RoCE、GPUDirect、NCCL 和逐层排障。
+- [Contiv、OVS 与 Cilium 串联网络实战](practices/contiv-ovs-cilium-network.md)：VLAN 组网、Socket LB 与 kube-proxy 的数据路径边界。
+- [AI 数据、存储与缓存](data-storage.md)：对象存储、共享文件、本地 NVMe、数据加载与缓存层级。
+- [大数据 on Kubernetes](data/big-data-on-kubernetes.md)：Spark、Flink、Kafka、Trino、Lakehouse、Operator、队列调度，以及训练与 RAG 数据链路。
+- [模型制品、分发与缓存](data/model-artifacts.md)：格式、版本、OCI Modelcar、跨地域复制、P2P、节点缓存、流式加载和冷启动。
+
+### 分布式训练
+
+- [分布式训练平台](distributed-training.md)：Kubeflow Trainer、KubeRay、JobSet 与训练生命周期。
+- [大模型 SFT 入门](training/sft-concepts.md)：从一条问答样本开始，解释 Loss、LoRA、Batch、Epoch、Checkpoint、Dense、MoE 与各种并行方式。
+- [Kubernetes 领域 SFT 社区实践](training/kubernetes-domain-sft-community.md)：分析 KubeFix、K8s Distill、KubeBench 和 ITBench，说明领域数据、工具调用、安全边界与可执行评测应该怎样设计。
+- [SFT 训练实战：从单卡 LoRA 到 DeepSeek V4](training/sft-from-single-gpu-to-deepseek-v4.md)：单卡闭环、多卡 MoE、DeepSeek V4 与多机网络实测。
+- [DeepSeek V4 双机 RDMA 训练实测](training/rdma-distributed-training-benchmark.md)：用三轮 TCP/RDMA A/B、NCCL AllReduce/All-to-All 和负对照解释哪些训练能真正受益。
+- [SwanLab 自托管与 SFT 指标](training/swanlab-self-hosted.md)：官方 Helm 部署、PoC/生产边界、ms-swift 接入、真实曲线和版本兼容性。
+- [从 W&B Local 到 SwanLab](training/wandb-vs-swanlab.md)：结合两年团队化 W&B Local 运维记录与当前 SwanLab 实测，比较功能、生产复杂度、迁移和授权边界。
+- [Ray 在大模型训练与推理中的角色](ray-llm-platform.md)：Ray Core、Data、Train、Tune、Serve、Serve LLM 与 KubeRay 的端到端边界。
+- [可靠性、Checkpoint 与故障恢复](reliability.md)：RPO/RTO、Spot、优雅退出和故障演练。
+
+### LLM 推理
+
+- [本地运行与测试大模型](inference/local-testing.md)：用 Ollama、llama.cpp、LM Studio、LocalAI、MLX-LM 和 vLLM/SGLang 验证模型与应用契约。
+- [LLM 推理平台总览](llm-inference.md)：服务抽象、运行时、请求链路和容量模型。
+- [推理引擎选型](inference/engines.md)：vLLM、SGLang、TensorRT-LLM、Triton、llama.cpp 等运行时的边界。
+- [LLM Serving 与 AI 微服务框架](inference/serving-frameworks.md)：vLLM、KServe、AIBrix、Ray Serve、BentoML、NVIDIA NIM 与应用层框架。
+- [LLM 推理性能优化](inference/optimization.md)：TTFT、TPOT、批处理、KV Cache、量化、并行和推测解码。
+- [KV Cache 原理、应用与 Kubernetes](inference/kv-cache-overview.md)：Attention 原理、显存算例、前缀复用、分层缓存，以及请求路由、NUMA 和扩缩容。
+- [大模型 API 中转器与 LLM Gateway 综述](inference/llm-api-relay-gateway-overview.md)：模型聚合、自建统一 API、企业 AI Gateway、推理路由、语义路由、安全风险与选型。
+- [AI Gateway 与智能路由](inference/gateway-routing.md)：Gateway API Inference Extension、前缀感知、负载感知和流控。
+- [Higress AI Gateway 实战](inference/higress-ai-gateway.md)：隔离安装、AI Proxy、Token 治理、可观测性，以及与 AIBrix 同集群和跨集群接入。
+- [分布式与 Prefill/Decode 分离推理](inference/distributed-serving.md)：模型并行、LeaderWorkerSet、llm-d、Dynamo 和 KV 传输。
+
+### RAG、Agent 与边缘
+
+- [2026 年 AI Agent 现状、实现原理与趋势](rag-agent/agent-landscape-2026.md)：主流编程、浏览器与企业 Agent 的产品格局、实现原理、框架、风险和演进方向。
+- [Agent Harness 技术综述](rag-agent/agent-harness-technology-overview.md)：Agent Loop、上下文、工具、状态恢复、沙箱、权限、验证与 Kubernetes 生产架构。
+- [腾讯 CNB 与 GitHub、GitLab、Gitee 对比](rag-agent/tencent-cnb-vs-github-gitlab-gitee.md)：代码托管、云开发、CI/CD、AI Agent、计费与企业选型。
+- [Agent RL：veRL 与 Miles](rag-agent/agent-rl-verl-miles-overview.md)：多轮轨迹、奖励与动作掩码，主流训练框架、TITO、全异步流水线及 Kubernetes 工程落地。
+- [DeepSeek Search/Fetch 与 Agent 联网成本](rag-agent/deepseek-search-fetch-agent-cost.md)：搜索、抓取的作用，供应商定价差异与任务预算计算。
+- [Omarchy Linux 与 Agent OS 综述](rag-agent/omarchy-agent-os-overview.md)：桌面 Linux、Agno、AIOS、BrowserOS 的定位、工作机制、权限与企业落地。
+- [ChatGPT Dots 技术解析](rag-agent/chatgpt-dots-overview.md)：发布时间、持续职责、记忆、云端与本地执行、Codex 协作，以及企业权限和 Kubernetes 接入建议。
+- [Agent 评估方法综述](rag-agent/agent-evaluation-overview.md)：任务成功、工具轨迹、故障恢复、安全、成本和人工介入的评分方法。
+- [Harbor Agent 评测框架综述](rag-agent/harbor-agent-evaluation-framework.md)：Task、Agent Adapter、隔离环境、Verifier、Rollout 及 Kubernetes 生产化。
+- [Jev System One 决策模型综述](rag-agent/jev-system-one-model-overview.md)：不生成文本的概率决策接口、置信度、Agent 路由、社区争议、生产架构与评估方法。
+- [Jev 每周回顾](rag-agent/jev-weekly-review.md)：按周追踪官方版本、独立评测、社区权重与 Agent 应用，保留历史结果与判断。
+- [HarnessRouter 综述](rag-agent/harnessrouter-overview.md)：UHP、统一 Harness API、Cloud 与 Community Edition、安全边界、成本及与模型网关的关系。
+- [HiRoute Agent 路由与模型协作](rag-agent/hiroute-overview.md)：Higress 团队的本地路由引擎，解析阶段选模、Jev 决策、上下文保持和企业接入。
+- [DeepSeek Harness GitHub 仓库深度解析](rag-agent/deepseek-harness-repository-analysis.md)：源码目录、Cordis 插件树、Profile 与 Bundle、Agent Loop、事件溯源会话和能力 seam。
+- [DeepSeek Super-agent 解析](rag-agent/deepseek-superagent-prototype-analysis.md)：事件准入、任务授权、并发执行、持久恢复、Web 面板与企业接入边界。
+- [DeepSeek Super-agent Kubernetes 实战](rag-agent/deepseek-superagent-kubernetes-practice.md)：接入 Gitea 与 Mattermost，验证复杂编码任务、独立验收、真实页面和恢复边界。
+- [DeepSeek Harness Docker、Compose 与 Helm 部署实战](rag-agent/deepseek-harness-runtime-containerization.md)：多架构镜像、EROFS 修复、状态持久化、StatefulSet、Helm 与安全暴露边界。
+- [从 Docker 到 Kubernetes：DeepSeek Harness、内置 Chromium 与 DSH Plugin 实战](practices/deepseek-harness-kubernetes.md)：all-in-one 浏览器桌面、自研 DSH Plugin、Tailscale 远程入口、状态卷、Cilium 探针冲突和安全边界。
+- [RAG 基础设施](rag-agent/rag-infrastructure.md)：采集、切分、Embedding、向量数据库、检索、重排和权限过滤。
+- [Agent Sandbox 选型与架构分析](rag-agent/agent-sandbox-selection.md)：威胁模型、Kubernetes Agent Sandbox、gVisor、Kata、微虚机和托管平台决策。
+- [OpenSandbox Kubernetes 实战](rag-agent/opensandbox-kubernetes-practice.md)：官方 Console、文件与命令执行、四并发、访问鉴权、到期回收及真实监控截图。
+- [OpenKruise Agents Kubernetes 实战](rag-agent/openkruise-agents-kubernetes-practice.md)：预热池与按需创建、SDK 任务、文件分离、超时回收，以及镜像引用导致的恢复阻塞排查。
+- [BoxLite Kubernetes 实战](rag-agent/boxlite-kubernetes-practice.md)：嵌入式 SDK 启动 microVM，验证四实例并发、文件隔离与 Pod 重建后的磁盘恢复，并分析资源曲线和恢复后的指标偏差。
+- [Microsandbox Kubernetes 实战](rag-agent/microsandbox-kubernetes-practice.md)：非特权 Pod 使用 KVM，验证四实例并发、Live Fork 与 Pod 重建后的完整内存快照恢复，对比磁盘恢复并保留失败记录。
+- [沙箱故障与网络策略实战](rag-agent/sandbox-runtime-failure-network-policy.md)：强杀 SDK 与 VMM、重建 Pod，验证 guest 存活和网络限制，并以 OpenSandbox 控制面停止作对照。
+- [CubeSandbox Kubernetes 部署条件与生产评估](rag-agent/cubesandbox-kubernetes.md)：60ms 基准口径、KVM/PVM、XFS、eBPF、Helm 与生产上线边界。
+- [CubeSandbox Agent Adapter v0.3 实测](rag-agent/cubesandbox-agent-adapter-v03.md)：OpenClaw、DSH、Hermes 与 Codex 四客户端验收，以及持久租约、异步 Job、PTY、Checkpoint、Redis HA、多租户身份和迁移 Gate。
+- [OpenClaw 作为企业 Agent 平台底座](rag-agent/openclaw-enterprise-agent-platform.md)：可复用能力、企业控制面缺口、安全风险、二次开发边界和推荐架构。
+- [OpenClaw 2.0 实测：与 1.x 的架构、功能、性能和迁移风险对比](rag-agent/openclaw-2-real-world-review.md)：隔离安装、Control UI、Workboard、无头 Agent、实测指标、doctor 迁移与回滚 Gate。
+- [企业内部 AI 应用如何快速发布与共享](rag-agent/internal-agent-app-publishing.md)：面向商务、法务和运营等非研发用户的搭建、试运行、审批、权限、运行时和应用目录设计。
+- [AI Agent、沙箱与工具执行](agentic-workloads.md)：RuntimeClass、网络边界、凭据、工具权限和审计。
+- [边缘 AI 与云边协同](edge-ai.md)：K3s、弱网自治、设备管理、模型 OTA 和边缘可观测性。
+
+### 平台工程与生产运维
+
+- [大模型时代的 GPU Notebook 平台与存储选型](development/gpu-notebook-platform.md)：JupyterHub、Kubeflow、托管 Workbench、GPU 共享、用户 Home、对象存储和本地缓存。
+- [MLOps 与平台工程](mlops.md)：流水线、实验、模型注册、GitOps 和平台 API。
+- [GPU、训练与推理可观测性](observability.md)：DCGM、作业指标、TTFT/TPOT、Trace、SLO 和告警。
+- [AI 平台安全与治理](security-governance.md)：身份、Pod Security、镜像与模型供应链、租户隔离。
+- [性能基准、压测与回归](benchmarking.md)：硬件、NCCL、存储、训练、推理和发布门禁。
+- [平台运维、升级与多集群](platform-operations.md)：版本矩阵、Canary、CRD、备份、灾备和事故响应。
+- [AI on K8s 落地路线图](adoption-roadmap.md)：从现状评估到 30/60/90 天实施计划。
+
+### 参考架构与实验
+
+- [实战、排障与选型](practices/index.md)：GPU Pending、低利用率、推理引擎实测、成本计算、模型分发、Spot 恢复和安全攻防。
+- [生产参考架构](guides/reference-architectures.md)：小型 GPU 平台、多租户训练、高可用推理、分离式推理和 Agent 沙箱。
+- [GPU 平台最小闭环实验](guides/gpu-platform-lab.md)：资源发现、GPU 冒烟、vLLM 服务、网络策略、冷启动和优雅下线。
+- [AI/LLM 集群组件清单](../cases/ai-cluster-component-checklist.md)：按目标场景列出组件、必要性、引入理由和验收条件。
+
+## 工具不等于架构
+
+同一层通常有多个项目可选，项目之间也可能重叠。选择工具前先写清输入、输出、所有者和验收指标。
+
+| 能力 | 常见实现 | 先回答的问题 |
+| --- | --- | --- |
+| 设备接入 | Device Plugin、CDI、DRA、厂商 Operator | 需要整卡、分片、拓扑还是动态声明？ |
+| 批调度 | kube-scheduler、Kueue、Volcano | 需要准入队列、公平共享还是 Gang Scheduling？ |
+| 大数据计算 | Spark、Flink、Trino、Ray Data | 是批处理、流状态、交互 SQL 还是 AI 数据准备？ |
+| 训练控制 | Kubeflow Trainer、JobSet、KubeRay | 训练框架、容错和弹性边界是什么？ |
+| 模型服务 | KServe、Seldon、自建控制器 | 需要标准模型 API、多模型还是 LLM 专用能力？ |
+| 推理运行时 | vLLM、SGLang、TensorRT-LLM、Triton | 目标模型、硬件、延迟和吞吐是什么？ |
+| 请求入口 | Gateway API、Inference Extension、服务网格 | 路由需要理解模型、KV Cache 和队列状态吗？ |
+| Agent 执行 | Agent Sandbox、gVisor、Kata、托管 Sandbox API | 生命周期、隔离运行时和工具授权是否已经分层？ |
+| 可观测性 | Prometheus、OpenTelemetry、DCGM Exporter | 能否从用户请求追到 Pod、GPU、网络和模型版本？ |
+
+## 内容状态和更新规则
+
+- `stable`：原理和生产方法相对稳定，仍需结合目标 Kubernetes 和组件版本验证。
+- `evolving`：上游 API、项目边界或最佳实践仍在快速变化，上线前应检查官方版本说明。
+- `lab`：用于复现和学习的最小实验，不应不经评审直接复制到生产。
+- `last_reviewed`：最近一次按一手资料复核的日期，不代表所有依赖都固定在该日期。
+- 示例优先表达结构和验证方法；生产配置还必须补齐镜像固定、容量、身份、密钥、备份、SLO 和变更流程。
+
+## 建议的建设顺序
+
+1. 先建立节点、驱动、网络、存储和 GPU 的可重复验收基线。
+2. 再统一资源模型、队列、租户、镜像、模型制品和可观测性。
+3. 分别为训练、在线推理、离线推理、RAG 和 Agent 建立黄金路径。
+4. 用性能基准、故障演练、成本指标和升级矩阵形成持续交付门禁。
+5. 最后再根据规模引入 DRA、高级拓扑、分离式推理、多集群和复杂调度策略。
+
+如果正在规划第一版平台，可以从 [生产参考架构](guides/reference-architectures.md) 选一个最接近的起点，再用 [落地路线图](adoption-roadmap.md) 拆成阶段目标。

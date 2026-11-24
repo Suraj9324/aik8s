@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Firecracker Kubernetes 实验证据</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #dfe4ec;
+      --panel: #ffffff;
+      --page: #f3f6fa;
+      --blue: #2563eb;
+      --blue-soft: #eaf1ff;
+      --green: #15803d;
+      --green-soft: #eaf8ef;
+      --amber: #b45309;
+      --amber-soft: #fff4df;
+      --violet: #6d28d9;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; min-height: 100%; background: var(--page); }
+    body {
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    main { width: 1600px; height: 1000px; padding: 58px 68px 48px; overflow: hidden; }
+    .view { display: none; height: 100%; }
+    .view.active { display: flex; flex-direction: column; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 34px; }
+    .eyebrow { color: var(--blue); font-weight: 750; font-size: 17px; letter-spacing: .09em; text-transform: uppercase; }
+    h1 { margin: 8px 0 8px; font-size: 48px; line-height: 1.08; letter-spacing: -.035em; }
+    .subtitle { color: var(--muted); font-size: 20px; line-height: 1.45; max-width: 970px; }
+    .stamp { display: flex; gap: 10px; align-items: center; }
+    .badge { padding: 9px 13px; border-radius: 999px; background: var(--green-soft); color: var(--green); font-size: 14px; font-weight: 750; border: 1px solid #bce5c9; }
+    .badge.neutral { background: #fff; color: #475467; border-color: var(--line); }
+    .grid { display: grid; gap: 22px; flex: 1; min-height: 0; }
+    .cols-2 { grid-template-columns: 1fr 1fr; }
+    .cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 26px 28px; box-shadow: 0 8px 26px rgba(16, 24, 40, .05); }
+    .card h2 { margin: 0 0 20px; font-size: 22px; letter-spacing: -.015em; }
+    .metric { font-size: 47px; font-weight: 780; letter-spacing: -.035em; line-height: 1; }
+    .metric small { font-size: 19px; color: var(--muted); font-weight: 650; letter-spacing: 0; }
+    .label { margin-top: 10px; color: var(--muted); font-size: 16px; }
+    .accent { color: var(--blue); }
+    .success { color: var(--green); }
+    .warn { color: var(--amber); }
+    .bar-row { display: grid; grid-template-columns: 175px 1fr 110px; gap: 18px; align-items: center; margin: 22px 0; }
+    .bar-label { font-weight: 700; font-size: 17px; }
+    .track { height: 22px; border-radius: 999px; background: #edf0f5; overflow: hidden; }
+    .fill { height: 100%; min-width: 8px; border-radius: inherit; background: linear-gradient(90deg, var(--blue), #60a5fa); }
+    .fill.green { background: linear-gradient(90deg, #15803d, #4ade80); }
+    .fill.violet { background: linear-gradient(90deg, #6d28d9, #a78bfa); }
+    .bar-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 760; font-size: 18px; }
+    .callout { border-radius: 14px; padding: 17px 19px; background: var(--blue-soft); border: 1px solid #cbdcff; font-size: 16px; line-height: 1.45; }
+    .callout.warnbox { background: var(--amber-soft); border-color: #f1d19a; color: #7c3d0b; }
+    table { width: 100%; border-collapse: collapse; font-size: 17px; }
+    th { color: var(--muted); text-align: left; font-size: 14px; text-transform: uppercase; letter-spacing: .055em; padding: 0 12px 14px; }
+    td { padding: 17px 12px; border-top: 1px solid var(--line); vertical-align: middle; }
+    td:first-child { font-weight: 740; }
+    .pass { color: var(--green); font-weight: 780; }
+    .partial { color: var(--amber); font-weight: 780; }
+    code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .92em; background: #f0f2f5; padding: 3px 7px; border-radius: 6px; }
+    .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; }
+    .check { display: flex; gap: 12px; align-items: flex-start; padding: 18px; border-radius: 13px; border: 1px solid var(--line); background: #fbfcfe; }
+    .checkmark { width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--green); font-weight: 900; }
+    .check strong { display: block; font-size: 17px; margin-bottom: 4px; }
+    .check span { color: var(--muted); font-size: 15px; line-height: 1.35; }
+    .terminal { background: #f9fafb; color: #243045; border: 1px solid var(--line); border-radius: 15px; padding: 22px; font: 16px/1.58 "SFMono-Regular", Consolas, monospace; }
+    .terminal .ok { color: var(--green); font-weight: 700; }
+    footer { margin-top: 22px; display: flex; justify-content: space-between; color: #7a8496; font-size: 13px; }
+    .source { max-width: 1100px; }
+  </style>
+</head>
+<body>
+<main>
+  <section id="snapshot" class="view">
+    <header>
+      <div><div class="eyebrow">实测证据 · 实验 1</div><h1>原生快照恢复让 Guest 就绪快约 49 倍</h1><div class="subtitle">在专用 x86_64 实验 Worker 上完成一次 Firecracker 1.16.1 完整快照冒烟测试。</div></div>
+      <div class="stamp"><span class="badge">通过</span><span class="badge neutral">2026-09-02</span></div>
+    </header>
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>进程启动后的网络就绪时间</h2>
+        <div class="bar-row"><div class="bar-label">冷启动</div><div class="track"><div class="fill" style="width:100%"></div></div><div class="bar-value">1,280 ms</div></div>
+        <div class="bar-row"><div class="bar-label">快照恢复</div><div class="track"><div class="fill green" style="width:2.04%"></div></div><div class="bar-value success">26.15 ms</div></div>
+        <div class="callout"><strong>到首次 ping 成功快约 49 倍。</strong>这是一次受控冒烟观测，不是百分位基准测试。</div>
+      </div>
+      <div class="grid cols-2" style="grid-template-columns:1fr 1fr;">
+        <div class="card"><div class="metric accent">188.82 <small>ms</small></div><div class="label">完整快照创建 API</div></div>
+        <div class="card"><div class="metric success">16.86 <small>ms</small></div><div class="label">快照加载 API</div></div>
+        <div class="card"><div class="metric">256 <small>MiB</small></div><div class="label">Guest 内存文件</div></div>
+        <div class="card"><div class="metric">v10.0.0</div><div class="label">快照数据版本</div></div>
+      </div>
+    </div>
+    <footer><span class="source">方法：暂停 → 完整快照 → 新 Firecracker 进程 → 加载 → ping/TCP 探测。匹配的 rootfs 复用一次；未测试不可变重复恢复。</span><span>已脱敏实验数据</span></footer>
+  </section>
+
+  <section id="concurrency" class="view">
+    <header>
+      <div><div class="eyebrow">实测证据 · 实验 2</div><h1>Kata + Firecracker 从 1 扩展到 10 个并发 Pod</h1><div class="subtitle">就绪时间包含 Kubernetes 调度、Kata 初始化、Firecracker Guest 启动和容器就绪。</div></div>
+      <div class="stamp"><span class="badge">通过</span><span class="badge neutral">每档一个批次</span></div>
+    </header>
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>观测到的就绪时间</h2>
+        <table>
+          <thead><tr><th>批次</th><th>样本（秒）</th><th>P50</th><th>P95 / 最大值</th></tr></thead>
+          <tbody>
+            <tr><td>1 Pod</td><td>4</td><td>4 s</td><td>4 / 4 s</td></tr>
+            <tr><td>5 Pod</td><td>4, 5, 6, 7, 8</td><td>6 s</td><td>8 / 8 s</td></tr>
+            <tr><td>10 Pod</td><td>4, 5, 5, 6, 6, 6, 7, 8, 8, 8</td><td>6 s</td><td>8 / 8 s</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid cols-2" style="grid-template-columns:1fr 1fr;">
+        <div class="card"><div class="metric accent">11</div><div class="label">Firecracker 进程峰值，含保留 Workbench</div></div>
+        <div class="card"><div class="metric">1.45 <small>GiB</small></div><div class="label">VMM 聚合 RSS 峰值</div></div>
+        <div class="card"><div class="metric success">0</div><div class="label">测试批次中的失败 Pod</div></div>
+        <div class="card"><div class="metric success">0</div><div class="label">删除后泄漏的测试 VMM</div></div>
+      </div>
+    </div>
+    <footer><span class="source">范围：每个并发档位运行一个镜像已预热批次。发布基准百分位前，应随机重复至少 30 次。</span><span>已脱敏实验数据</span></footer>
+  </section>
+
+  <section id="agents" class="view">
+    <header>
+      <div><div class="eyebrow">实测证据 · 实验 3</div><h1>四种 Agent 应用运行在 Kata + Firecracker 中</h1><div class="subtitle">每个应用 Pod 均使用 Guest 内核 6.18.35，并将执行路由到独立、受策略控制的 CubeSandbox microVM。</div></div>
+      <div class="stamp"><span class="badge">4 / 4 READY</span><span class="badge neutral">0 次重启</span></div>
+    </header>
+    <div class="grid cols-2">
+      <div class="card">
+        <table>
+          <thead><tr><th>应用</th><th>版本</th><th>已验证链路</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr><td>OpenClaw</td><td>2026.8.2</td><td>插件 · 执行 · 状态 · 释放</td><td class="pass">3 次调用，0 失败</td></tr>
+            <tr><td>DSH</td><td>0.1.2-alpha.4</td><td>Cordis 插件 · 模型 · Cube 工具</td><td class="pass">标记 + 清理</td></tr>
+            <tr><td>Hermes Agent</td><td>0.21.0</td><td>原生插件 · 模型 · Cube 工具</td><td class="pass">审计链正常</td></tr>
+            <tr><td>Codex</td><td>0.150.1</td><td>stdio MCP 门面 · 17 个工具</td><td class="pass">执行/状态/释放</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>已脱敏的执行标记</h2>
+        <div class="terminal">
+          <div><span class="ok">✓</span> OPENCLAW_FIRECRACKER_CUBESANDBOX_OK</div>
+          <div><span class="ok">✓</span> DSH_FIRECRACKER_CUBESANDBOX_OK</div>
+          <div><span class="ok">✓</span> HERMES_FIRECRACKER_CUBESANDBOX_OK</div>
+          <div><span class="ok">✓</span> CODEX_MCP_FIRECRACKER_OK</div>
+          <br>
+          <div>adapter_active_leases = <span class="ok">0</span></div>
+          <div>runtimeClassName = kata-fc-lab</div>
+        </div>
+        <div class="callout warnbox" style="margin-top:18px"><strong>网络发现：</strong>该节点上的 Kata TAP 无法使用 Service VIP 转发，但 Pod 直连可用。实验使用了临时、不公开的运行时覆盖配置，并记录这一差距。</div>
+      </div>
+    </div>
+    <footer><span class="source">本文不声称完成 Codex 模型执行：可用内网网关提供 Chat Completions，而 Codex 自定义 Provider 要求 Responses 协议。</span><span>已脱敏实验数据</span></footer>
+  </section>
+
+  <section id="observability" class="view">
+    <header>
+      <div><div class="eyebrow">实测证据 · 实验 5</div><h1>只看容器指标会低估 microVM 宿主机开销</h1><div class="subtitle">同时观测四个 Agent Pod 和一个保留的 Kata/Firecracker Workbench。</div></div>
+      <div class="stamp"><span class="badge">5 个 VMM</span><span class="badge neutral">单点采样</span></div>
+    </header>
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Kubernetes 容器可见内存</h2>
+        <div class="bar-row"><div class="bar-label">OpenClaw</div><div class="track"><div class="fill" style="width:46%"></div></div><div class="bar-value">193 MiB</div></div>
+        <div class="bar-row"><div class="bar-label">DSH</div><div class="track"><div class="fill" style="width:100%"></div></div><div class="bar-value">419 MiB</div></div>
+        <div class="bar-row"><div class="bar-label">Hermes</div><div class="track"><div class="fill" style="width:31%"></div></div><div class="bar-value">131 MiB</div></div>
+        <div class="bar-row"><div class="bar-label">Codex</div><div class="track"><div class="fill" style="width:84%"></div></div><div class="bar-value">351 MiB</div></div>
+      </div>
+      <div class="card">
+        <h2>宿主机侧 VMM 观测</h2>
+        <div class="metric accent">2.68 <small>GiB RSS</small></div>
+        <div class="label">五个 Firecracker 进程聚合值</div>
+        <div style="height:28px"></div>
+        <div class="metric">~1.07 <small>GiB</small></div>
+        <div class="label">四个容器可见样本之和</div>
+        <div class="callout" style="margin-top:25px"><strong>两者统计口径不同，不能直接加减。</strong>VMM、shim、Guest、Page Cache 和 Payload 分属不同核算层。容量规划必须同时采集两类指标。</div>
+      </div>
+    </div>
+    <footer><span class="source">其他检查：devmapper Thin Pool 保持可读写；全部应用任务完成后，Adapter 返回 0 个活跃租约。</span><span>已脱敏实验数据</span></footer>
+  </section>
+
+  <section id="security" class="view">
+    <header>
+      <div><div class="eyebrow">实测证据 · 实验 7</div><h1>Firecracker jailer 纵深防御控制已生效</h1><div class="subtitle">使用版本匹配的 Firecracker/Jailer 1.16.1 二进制启动真实的 2 vCPU、256 MiB Guest。</div></div>
+      <div class="stamp"><span class="badge">通过</span><span class="badge neutral">cgroup v1</span></div>
+    </header>
+    <div class="grid cols-2">
+      <div class="card">
+        <div class="checks">
+          <div class="check"><div class="checkmark">✓</div><div><strong>权限降低</strong><span>UID/GID 65534；有效 Capabilities 全部为 0</span></div></div>
+          <div class="check"><div class="checkmark">✓</div><div><strong>Chroot</strong><span>jail 根目录中不存在宿主机 shadow 文件</span></div></div>
+          <div class="check"><div class="checkmark">✓</div><div><strong>PID 命名空间</strong><span>宿主机 PID 在 jail 内映射为 PID 1</span></div></div>
+          <div class="check"><div class="checkmark">✓</div><div><strong>挂载命名空间</strong><span>命名空间 inode 与宿主机不同</span></div></div>
+          <div class="check"><div class="checkmark">✓</div><div><strong>Cgroup 控制</strong><span>VM 启动前后均为 <code>cpu.shares=64</code></span></div></div>
+          <div class="check"><div class="checkmark">✓</div><div><strong>资源限制</strong><span><code>nofile</code> 软、硬限制均为 128</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Guest 启动后的 Seccomp</h2>
+        <div class="metric success">4 / 4 <small>线程</small></div>
+        <div class="label">每个 Firecracker 线程均报告 <code>Seccomp=2</code></div>
+        <div style="height:24px"></div>
+        <div class="terminal">
+          <div>NoNewPrivs: <span class="ok">1</span></div>
+          <div>Seccomp: <span class="ok">2</span></div>
+          <div>Seccomp_filters: <span class="ok">1</span></div>
+          <div>CapEff: <span class="ok">0000000000000000</span></div>
+          <div>jail_kvm_device: 已存在</div>
+          <div>jail_tun_device: 已存在</div>
+        </div>
+        <div class="callout warnbox" style="margin-top:18px"><code>InstanceStart</code> 之前，尚未启动 Guest 的 API 进程报告 <code>Seccomp=0</code>。Guest 启动时默认过滤器生效；两种状态都已实测并记录。</div>
+      </div>
+    </div>
+    <footer><span class="source">已测试控制：jailer、非 root UID/GID、chroot、PID/挂载命名空间、cgroup、rlimit、Capabilities、NoNewPrivs 和默认 seccomp。</span><span>已脱敏实验数据</span></footer>
+  </section>
+</main>
+<script>
+  const requested = new URLSearchParams(location.search).get("view") || "snapshot";
+  const selected = document.getElementById(requested) || document.getElementById("snapshot");
+  selected.classList.add("active");
+</script>
+</body>
+</html>

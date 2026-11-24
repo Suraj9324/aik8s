@@ -1,0 +1,165 @@
+name: Publish production artifact
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: production-artifact
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --requirement requirements.txt
+
+      - name: Verify bilingual integrity and article metadata
+        run: |
+          python scripts/bilingual.py
+          python -m unittest discover -s scripts -p 'test_*.py' -v
+          node --check docs/javascripts/timeline.js
+          node --check docs/javascripts/engagement.js
+          node --check docs/javascripts/search-polish.js
+          node --check docs/javascripts/topic-cloud.js
+
+      - name: Build Chinese and English documentation
+        run: python scripts/build_bilingual.py
+
+      - name: Generate public moments snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/generate_moments_snapshot.py
+
+      - name: Verify all internal links, images and anchors
+        run: python scripts/check_site_links.py --site-dir site --site-url https://aik8s.run/
+
+      - name: Verify browser interactions before publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix .local/browser-check --ignore-scripts --no-audit --no-fund playwright@1.64.1
+          export NODE_PATH="$PWD/.local/browser-check/node_modules"
+          export CHROMIUM_PATH="$(command -v google-chrome || command -v chromium)"
+          test -n "$CHROMIUM_PATH"
+          node scripts/test_timeline_browser.cjs
+          node scripts/test_engagement_browser.cjs
+          node scripts/test_moments_comments.cjs
+          node scripts/test_blog_polish_browser.cjs
+          node scripts/test_search_browser.cjs
+          node scripts/test_topic_cloud_browser.cjs
+
+      - name: Add production-only AdSense
+        env:
+          ADSENSE_CLIENT: ca-pub-5607799704547851
+        run: python scripts/inject_adsense.py --site-dir site --client "$ADSENSE_CLIENT"
+
+      - name: Add production-only Cloudflare Web Analytics
+        env:
+          CLOUDFLARE_WEB_ANALYTICS_TOKEN: 74fa5819a51b45448c0062e7de37cee0
+        run: >-
+          python scripts/inject_cloudflare_analytics.py
+          --site-dir site
+          --token "$CLOUDFLARE_WEB_ANALYTICS_TOKEN"
+
+      - name: Enforce authored-asset performance budgets
+        run: python scripts/check_site_budget.py --site-dir site
+
+      - name: Package deployment artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          tar --dereference --directory site --create --gzip \
+            --file dist/aik8s-site.tar.gz .
+          (
+            cd dist
+            sha256sum aik8s-site.tar.gz > aik8s-site.tar.gz.sha256
+          )
+          printf '%s\n' "$GITHUB_SHA" > dist/revision.txt
+          checksum="$(cut -d ' ' -f 1 dist/aik8s-site.tar.gz.sha256)"
+          jq --null-input \
+            --arg revision "$GITHUB_SHA" \
+            --arg sha256 "$checksum" \
+            --arg generated_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            '{schema_version: 1, revision: $revision, sha256: $sha256, generated_at: $generated_at}' \
+            > dist/manifest.json
+
+      - name: Upload packaged site for the publish job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-site
+          path: dist/
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    name: Publish rolling release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download packaged site
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: production-site
+          path: dist
+
+      - name: Publish production release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: site-production
+        run: |
+          set -euo pipefail
+          test -s dist/aik8s-site.tar.gz
+          test -s dist/aik8s-site.tar.gz.sha256
+          test -s dist/manifest.json
+          test -s dist/revision.txt
+
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --title "aik8s.run production artifact" \
+              --notes "Rolling deployment artifact. The server pulls and verifies these assets before activation." \
+              --prerelease
+          else
+            gh release edit "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --notes "Rolling deployment artifact for revision $GITHUB_SHA."
+          fi
+
+          # revision.txt is the commit marker and must be replaced last. The
+          # server will not fetch the other assets until it observes this SHA.
+          gh release upload "$RELEASE_TAG" \
+            dist/aik8s-site.tar.gz \
+            dist/aik8s-site.tar.gz.sha256 \
+            dist/manifest.json \
+            --clobber
+          gh release upload "$RELEASE_TAG" dist/revision.txt --clobber

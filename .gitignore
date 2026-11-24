@@ -1,0 +1,63 @@
+.DS_Store
+.deploy-secrets/
+# Local credentials and client configuration; keep public examples elsewhere.
+/.env
+/.env.local
+/.env.*.local
+/.kube/
+/.ssh/
+/kubeconfig
+/kubeconfig.*
+/.netrc
+.venv/
+.wechat-output/
+.social-drafts/
+site/
+# Topic frequencies are regenerated from the paired source articles at build time.
+/docs/assets/topic-cloud-zh.json
+/docs/assets/topic-cloud-en.json
+/.zensical-*.generated.toml
+__pycache__/
+*.py[cod]
+
+# Local execution material containing real cluster, registry, node, or storage
+# identifiers. Publish a separately reviewed and sanitized template instead.
+/examples/deepseek-v4-flash-vision-exp/k8s/
+/examples/deepseek-v4-flash-vision-exp/results/20260901-day0-run.md
+/examples/glm53-day1/*.yaml
+/examples/glm53-day1/cases-sglang-resume.csv
+/examples/glm53-day1/results/sglang-baseline-20260830/
+/examples/glm53-day1/results/sglang-smoke-20260830/
+/examples/glm53-day1/results/vllm-baseline-20260830/
+/examples/hy4-preview-benchmark/k8s/
+/examples/hy4-preview-benchmark/results/2026-09-01-h20-bf16/sglang-smoke.json
+/examples/ling3-flash-h20/*
+!/examples/ling3-flash-h20/README.md
+!/examples/ling3-flash-h20/make_report_charts.py
+!/examples/ling3-flash-h20/results/
+/examples/ling3-flash-h20/results/*
+!/examples/ling3-flash-h20/results/2026-09-03-h20-bf16/
+!/examples/ling3-flash-h20/results/2026-09-03-h20-bf16/**
+/examples/minimax-music3-images/
+/examples/minimax-h3-h20/results/
+/examples/minimax-h3-h20/k8s/
+# Private local notes
+vip/
+/AGENTS.md
+/.local/
+
+# Qwen node inventories, manifests and live prewarm state
+/examples/qwen38-a95b-fp8-h20/results/
+
+# Test plans are local working notes, never public documentation.
+/.local/test-plans/
+/.local/langgraph-langfuse-demo/
+/.local/koordinator-webhook-cert-race/
+**/*test-plan.md
+**/*benchmark-plan.md
+
+# English mirrors of historical, already-published result reports. Their legacy
+# URLs contain "plan"; new test plans remain excluded above.
+!/translations/en/ai-k8s/practices/glm53-h20-sglang-vllm-test-plan.md
+!/translations/en/ai-k8s/practices/hy4-preview-hardware-benchmark-plan.md
+!/translations/en/ai-k8s/practices/ling3-flash-h20-deployment-benchmark-plan.md
